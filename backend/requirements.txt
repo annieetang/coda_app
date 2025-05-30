@@ -5,3 +5,4 @@ music21==9.1.0
 soundsliceapi
 python-dotenv==1.0.0
 redis==5.0.1
+werkzeug==3.0.1
