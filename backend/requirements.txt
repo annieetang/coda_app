@@ -4,7 +4,12 @@ python-multipart==0.0.6
 music21==9.1.0
 soundsliceapi
 python-dotenv==1.0.0
+<<<<<<< HEAD
 gunicorn==21.2.0
 redis==5.0.1
 werkzeug==3.0.1
 numpy==1.26.2
+=======
+redis==5.0.1
+werkzeug==3.0.1
+>>>>>>> main

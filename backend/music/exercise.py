@@ -2,8 +2,8 @@ from music21 import *
 from typing import Dict, List, Tuple, Set, Optional
 from collections import defaultdict
 import numpy as np
-from backend.music.matrix import MusicMatrixRepresentation
-from backend.music.processor import get_musicxml_from_music21, get_music21_from_music_matrix_representation
+from ..music.matrix import MusicMatrixRepresentation
+from ..music.processor import get_musicxml_from_music21, get_music21_from_music_matrix_representation
 import math
 
 # TODO: clean up structure

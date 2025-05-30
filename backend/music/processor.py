@@ -1,7 +1,7 @@
 from music21 import *
 from typing import Optional, Union
 from music21.musicxml.m21ToXml import ( GeneralObjectExporter )
-from backend.music.matrix import MusicMatrixRepresentation
+from ..music.matrix import MusicMatrixRepresentation
 import numpy as np
 from collections import defaultdict
 import os

@@ -1,8 +1,10 @@
 import redis
+import os
 from typing import Optional, Dict
 from urllib.parse import urlparse
 
 class RedisDatabase:
+<<<<<<< HEAD:backend/redis_db.py
     def __init__(self, url: Optional[str] = None):
         """Initialize Redis connection
         Args:
@@ -14,6 +16,25 @@ class RedisDatabase:
                 decode_responses=True  # This ensures strings are returned instead of bytes
             )
         else:
+=======
+    def __init__(self):
+        """Initialize Redis connection"""
+        redis_url = os.getenv('REDIS_URL')
+        if redis_url:
+            # Parse the REDIS_URL for Render deployment
+            parsed_url = urlparse(redis_url)
+            self.redis_client = redis.Redis(
+                host=parsed_url.hostname,
+                port=parsed_url.port,
+                username=parsed_url.username,
+                password=parsed_url.password,
+                ssl=True,
+                ssl_cert_reqs=None,
+                decode_responses=True
+            )
+        else:
+            # Local development fallback
+>>>>>>> main:redis_db.py
             self.redis_client = redis.Redis(
                 host='localhost',
                 port=6379,

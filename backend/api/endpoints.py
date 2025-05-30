@@ -6,14 +6,14 @@ from collections import defaultdict
 from music21 import *
 import math
 
-from backend.services.database import RedisDatabase
-from backend.services.soundslice import SoundsliceService
-from backend.api.models import (
+from ..services.database import RedisDatabase
+from ..services.soundslice import SoundsliceService
+from ..api.models import (
     MeasureRequest, MeasureResponse, GenerateRequest,
     SliceRequest, MusicXMLRequest, ExerciseResponse
 )
-from backend.music.processor import get_music21_score_notation, get_musicxml_from_music21, get_music21_from_music_matrix_representation
-from backend.music.exercise import get_all_exercises
+from ..music.processor import get_music21_score_notation, get_musicxml_from_music21, get_music21_from_music_matrix_representation
+from ..music.exercise import get_all_exercises
 
 # Create router
 router = APIRouter()

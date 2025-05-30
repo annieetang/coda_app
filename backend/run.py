@@ -7,7 +7,7 @@ if __name__ == "__main__":
     
     # Use 0.0.0.0 for production, allowing external access
     uvicorn.run(
-        "backend.app:app" if os.getenv("RENDER") else "app:app",
+        "backend.main:app" if os.getenv("RENDER") else "main:app",
         host="0.0.0.0",
         port=port,
         # Only use reload in development
