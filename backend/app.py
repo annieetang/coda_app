@@ -14,28 +14,32 @@ from dotenv import load_dotenv
 from typing import Optional
 from fastapi.staticfiles import StaticFiles
 from soundsliceapi import Client, Constants
+from config import Config
 
 load_dotenv()
 
 SOUNDSLICE_APP_ID = os.getenv("SOUNDSLICE_APP_ID")
 SOUNDSLICE_PASSWORD = os.getenv("SOUNDSLICE_PASSWORD")
 
-app = FastAPI()
+app = FastAPI(title="Coda Backend API")
+
+# Initialize configuration
+Config.initialize()
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=Config.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Initialize Redis database
-db = RedisDatabase()
+# Initialize Redis database with configuration
+db = RedisDatabase(Config.REDIS_URL)
 
 # Configure upload settings
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "music")
+UPLOAD_FOLDER = Config.UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'xml', 'musicxml', 'mxl'}
 
 # Create upload folder if it doesn't exist
@@ -835,6 +839,9 @@ scoreToScorehash = defaultdict(str)
 
 @app.on_event("startup")
 async def startup_event():
+    """Initialize any startup requirements"""
+    Config.initialize()
+    
     """Load score hashes from Redis when the app starts"""
     print("Loading score hashes from Redis...")
     global scoreToScorehash
@@ -882,4 +889,10 @@ def create_and_upload_slice(score_name: str, musicxml: Optional[str] = None):
     return scorehash
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    import uvicorn
+    uvicorn.run(
+        "app:app",
+        host=Config.HOST,
+        port=Config.PORT,
+        reload=False  # Disable reload in production
+    )

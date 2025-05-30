@@ -3,11 +3,13 @@ from soundsliceapi import Client, Constants
 from typing import Optional
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
 
 SOUNDSLICE_APP_ID = os.getenv("SOUNDSLICE_APP_ID")
 SOUNDSLICE_PASSWORD = os.getenv("SOUNDSLICE_PASSWORD")
+BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:5000")
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(CURRENT_DIR)))
@@ -27,6 +29,9 @@ class SoundsliceService:
         )
         scorehash = res['scorehash']
         
+        # Use environment-based callback URL
+        callback_url = f"{BASE_URL}/slice_callback"
+        
         # Handle the XML content
         if musicxml:
             fp = BytesIO(musicxml.encode('utf-8'))
@@ -38,7 +43,7 @@ class SoundsliceService:
             self.client.upload_slice_notation(
                 scorehash=scorehash,
                 fp=fp,
-                callback_url="http://127.0.0.1:5000/slice_callback"
+                callback_url=callback_url
             )
         finally:
             fp.close()
