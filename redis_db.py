@@ -1,15 +1,25 @@
 import redis
 from typing import Optional, Dict
+from urllib.parse import urlparse
 
 class RedisDatabase:
-    def __init__(self, host: str = 'localhost', port: int = 6379, db: int = 0):
-        """Initialize Redis connection"""
-        self.redis_client = redis.Redis(
-            host=host,
-            port=port,
-            db=db,
-            decode_responses=True  # This ensures strings are returned instead of bytes
-        )
+    def __init__(self, url: Optional[str] = None):
+        """Initialize Redis connection
+        Args:
+            url: Redis URL string. If None, connects to localhost
+        """
+        if url:
+            self.redis_client = redis.from_url(
+                url,
+                decode_responses=True  # This ensures strings are returned instead of bytes
+            )
+        else:
+            self.redis_client = redis.Redis(
+                host='localhost',
+                port=6379,
+                db=0,
+                decode_responses=True
+            )
         self._init_defaults()
 
     def _init_defaults(self):
