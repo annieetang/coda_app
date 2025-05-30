@@ -16,6 +16,11 @@
     @apply mt-24;
   }
 
+  /* Score Title Display */
+  .score-title-display {
+    @apply text-gray-800 border-gray-200 text-center text-2xl font-bold;
+  }
+
   /* Library Screen */
   .library-header {
     @apply px-8 py-6;

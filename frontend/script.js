@@ -111,9 +111,10 @@ async function loadScore(filename) {
     showLoading();
     try {
         console.log("Loading score:", filename);
-        // Set the piece title in breadcrumb
+        // Set the piece title in breadcrumb and score display
         const title = filename.replace('.xml', '').replace('.mxl', '').replace(/[_-]/g, ' ');
         document.getElementById('pieceTitle').textContent = title;
+        document.getElementById('scoreTitleDisplay').textContent = title;
 
         // Enable practice button
         document.getElementById('practiceBtn').disabled = false;
@@ -258,7 +259,7 @@ async function loadSoundsliceIframe(src, container, maxAttempts = 10) {
     iframe.style.margin = "0 auto";
     // if this is the miniplayer, height is - 300, if it's the main one, it should be - 250
     if (container.id === "soundsliceContainer") {
-      iframe.height = window.innerHeight - 250;
+      iframe.height = window.innerHeight - 280;
     } else {
       iframe.height = window.innerHeight - 300;
     }
@@ -386,7 +387,7 @@ async function postMessageAfterLoad(iframe) {
   ssiframe.postMessage('{"method": "getDuration"}', 'https://www.soundslice.com');
   ssiframe.postMessage('{"method": "getSpeed}', 'https://www.soundslice.com');
   // show title at top of notation
-  ssiframe.postMessage('{"method": "setTrackVisibility", "type": 13, "arg": 1}', 'https://www.soundslice.com');
+  // ssiframe.postMessage('{"method": "setTrackVisibility", "type": 13, "arg": 1}', 'https://www.soundslice.com');
 }
 
 async function testSoundsliceCreate() {
