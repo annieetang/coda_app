@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from backend.api.endpoints import router, MUSIC_DIR
-from backend.services.database import RedisDatabase
+from api.endpoints import router, MUSIC_DIR
+from services.database import RedisDatabase
 
 # Create FastAPI app
 app = FastAPI(
