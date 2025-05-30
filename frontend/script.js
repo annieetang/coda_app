@@ -2,18 +2,6 @@ document.querySelector("button").addEventListener("click", function(event) {
   event.preventDefault();
 });
 
-async function loadOriginal() {
-    console.log("Loading original MusicXML...");
-    osmd
-    // const response = await fetch(`http://localhost:5000/music/${filename}`);
-    .load("../music/test_score.mxl")
-    .then(
-      function() {
-        osmd.render();
-      }
-    );
-}
-
 // let fileSelector = document.getElementById("fileSelector");
 let fileSelected = "";
 const loadScoreBtn = document.getElementById("loadScoreBtn");
@@ -35,7 +23,7 @@ window.onload = async function () {
 };
 
 async function loadLibrary() {
-    const res = await fetch("http://127.0.0.1:5000/list_files");
+    const res = await fetch("http://127.0.0.1:5000/api/list_files");
     const files = await res.json();
     const libraryGrid = document.getElementById("libraryGrid");
     
@@ -228,9 +216,7 @@ window.addEventListener('message', async function(event) {
 });
 
 async function get_measure(second) {
-  // console.log("Getting measure for second:", second);
-  // call get_measure from the server
-  const response = await fetch("http://127.0.0.1:5000/get_measure_from_second", {
+  const response = await fetch("http://127.0.0.1:5000/api/get_measure_from_second", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename: fileSelected, second: second })
@@ -332,7 +318,7 @@ async function loadSoundsliceIframe(src, container, maxAttempts = 10) {
 
 async function getSliceHash(filename, musicxml = null) {
   const payload = musicxml ? { filename, musicxml } : { filename };
-  const response = await fetch("http://127.0.0.1:5000/get_slicehash", {
+  const response = await fetch("http://127.0.0.1:5000/api/get_slicehash", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -391,7 +377,7 @@ async function postMessageAfterLoad(iframe) {
 }
 
 async function testSoundsliceCreate() {
-  const response = await fetch("http://127.0.0.1:5000/load_soundslice", {
+  const response = await fetch("http://127.0.0.1:5000/api/load_soundslice", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename: fileSelected })
@@ -508,7 +494,7 @@ async function generateExercises() {
         document.getElementById('practiceNav').textContent = 'Practice';
         document.getElementById('exerciseNav').textContent = '';
         
-        const response = await fetch("http://127.0.0.1:5000/generate", {
+        const response = await fetch("http://127.0.0.1:5000/api/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -763,10 +749,9 @@ async function manipulateAndRender() {
     console.log("Manipulating and rendering MusicXML with range:", startMeasure, endMeasure);
     console.log("Manipulating and rendering MusicXML...");
     const file = '../music/' + fileSelected;
-    const response = await fetch("http://127.0.0.1:5000/generate", {
+    const response = await fetch("http://127.0.0.1:5000/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // body: JSON.stringify({ filename: '../music/' + fileSelected })
       body: JSON.stringify({ filename: file, start_measure: startMeasure, end_measure: endMeasure })
     });
 
@@ -862,7 +847,7 @@ async function handleFileUpload(event) {
         uploadContainer.appendChild(progress);
 
         // Upload file
-        const response = await fetch('http://127.0.0.1:5000/upload_score', {
+        const response = await fetch('http://127.0.0.1:5000/api/upload_score', {
             method: 'POST',
             body: formData
         });

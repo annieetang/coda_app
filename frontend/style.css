@@ -162,7 +162,6 @@
   .exercise-type-grid {
     @apply grid gap-6;
     grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
-    /* grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); */
   }
 
   .exercise-card {

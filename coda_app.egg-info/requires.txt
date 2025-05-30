@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+redis
+music21
+numpy
+werkzeug
+python-multipart

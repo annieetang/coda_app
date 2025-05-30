@@ -1,303 +1,45 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Response, Request
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import os
-from music21.musicxml.m21ToXml import ( GeneralObjectExporter )
 from music21 import *
-import numpy as np
-import math
+from typing import Dict, List, Tuple, Set, Optional
 from collections import defaultdict
-from redis_db import RedisDatabase
-from io import BytesIO
-from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
-from typing import Optional
-from fastapi.staticfiles import StaticFiles
-from soundsliceapi import Client, Constants
+import numpy as np
+from backend.music.matrix import MusicMatrixRepresentation
+from backend.music.processor import get_musicxml_from_music21, get_music21_from_music_matrix_representation
+import math
 
-load_dotenv()
+# TODO: clean up structure
+def get_all_exercises(score):
+        # turn l into a hashmap
+        l = defaultdict(list)
 
-SOUNDSLICE_APP_ID = os.getenv("SOUNDSLICE_APP_ID")
-SOUNDSLICE_PASSWORD = os.getenv("SOUNDSLICE_PASSWORD")
+        exerciseScore = ExerciseScore(score)
 
-app = FastAPI()
+        # if the score has multiple lines, we want to display the entire score together, otherwise we don't display score-level since it's the same as part-level
+        # if len(exerciseScore.parts) > 1:
+        description = "Full score showing all parts together"
+        l['Score Level'].append((description, get_musicxml_from_music21(exerciseScore.original_stream)))
+        # else:
+        #     l['Score Level'].append((None, None))
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
-)
-
-# Initialize Redis database
-db = RedisDatabase()
-
-# Configure upload settings
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "music")
-ALLOWED_EXTENSIONS = {'xml', 'musicxml', 'mxl'}
-
-# Create upload folder if it doesn't exist
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-def allowed_file(filename: str) -> bool:
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# Pydantic models for request/response validation
-class MeasureRequest(BaseModel):
-    filename: str
-    second: float
-
-class MeasureResponse(BaseModel):
-    measure_number: int
-
-class GenerateRequest(BaseModel):
-    filename: str
-    start_measure: int
-    end_measure: int
-
-class SliceRequest(BaseModel):
-    filename: str
-    musicxml: Optional[str] = None
-
-@app.post("/upload_score")
-async def upload_score(file: UploadFile = File(...)):
-    try:
-        if not file:
-            raise HTTPException(status_code=400, detail='No file uploaded')
-        
-        if file.filename == '':
-            raise HTTPException(status_code=400, detail='No selected file')
-        
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path_to_save = os.path.join(UPLOAD_FOLDER, filename)
+        for part in exerciseScore.parts:
+            # if the part has multiple lines, we want to display the entire part together, otherwise we don't display part-level since it's the same as line-level
+            # if len(part.lines) > 1:
+            # if len(exerciseScore.parts) > 1:
+            description = "Part showing all notes in a part together"
+            l['Part Level'].append((description, get_musicxml_from_music21(part.original_stream)))
+            # else:
+                # l['Part Level'].append((None, None))
             
-            # Check if file already exists
-            if os.path.exists(file_path_to_save):
-                raise HTTPException(status_code=400, detail='File already exists')
-            
-            try:
-                contents = await file.read()
-                with open(file_path_to_save, 'wb') as f:
-                    f.write(contents)
-                
-                # Use file's stream directly with music21
-                temp_score = converter.parse(file_path_to_save)
-                
-                return {"message": 'File uploaded successfully'}
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f'Invalid MusicXML file: {str(e)}')
-        
-        raise HTTPException(status_code=400, detail='Invalid file type')
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f'Server error: {str(e)}')
-
-@app.get("/list_files")
-async def list_files():
-    music_folder = "../music"
-    files = [
-        f for f in os.listdir(music_folder)
-        if f.lower().endswith((".mxl", ".musicxml"))
-    ]
-    return files
-
-@app.post("/get_measure_from_second", response_model=MeasureResponse)
-async def get_measure_from_second(data: MeasureRequest):
-    score_name = "../music/" + data.filename
-
-    # get the score notation
-    score = get_music21_score_notation(score_name)
-    # get the time signature   
-    time_signature = score.recurse().getElementsByClass(meter.TimeSignature)[0]
-    # get tempo marking if it exists
-    tempo_marks = score.recurse().getElementsByClass(tempo.MetronomeMark)
-    tempo_marking = tempo_marks[0] if tempo_marks else None
-
-    # get the tempo in bpm
-    bpm = tempo_marking.number if tempo_marking else 120
-
-    # get the time signature in beats per measure
-    beats_per_measure = time_signature.numerator
-
-    # calculate the number of seconds per beat
-    measure_number = math.floor(data.second / 60 * bpm / beats_per_measure) + 1
-
-    return {"measure_number": measure_number}
-
-@app.post("/slice_callback")
-async def slice_callback(request: Request):
-    data = await request.json()
-    
-    scorehash = data.get("scorehash")
-    success = data.get("success")
-    error = data.get("error")
-    
-    if success == "2":  # Error case
-        print(f"Error processing notation: {error}")
-        raise HTTPException(status_code=400)
-    
-    return Response(status_code=200)
-
-@app.post("/get_slicehash")
-async def get_slicehash(data: SliceRequest):
-    score_name = data.filename
-    if score_name in scoreToScorehash:
-        print("Score found in Redis, returning slice hash...")
-        return {"slicehash": scoreToScorehash[score_name]}
-    else:
-        print("Score not found, creating and uploading new slice...")
-        create_and_upload_slice(score_name, data.musicxml)
-        return {"slicehash": scoreToScorehash[score_name]}
-
-@app.post("/save_musicxml_to_file")
-async def save_musicxml_to_file(request: Request):
-    data = await request.json()
-    score_name = data.get("filename")
-    musicxml = data.get("musicxml")
-
-    try:
-        # save the musicxml to the file
-        with open(score_name, 'w') as f:
-            f.write(musicxml)
-        return {"success": True}
-    except Exception as e:
-        print(f"Error saving musicxml to file: {e}")
-        return {"success": False, "error": str(e)}
-
-@app.post("/generate")
-async def generate_exercises(data: GenerateRequest):
-    score_name = data.filename
-    start_measure = data.start_measure
-    end_measure = data.end_measure
-
-    # get the score excerpt in music21 notation
-    score_excerpt = get_music21_score_notation(score_name, start_measure, end_measure)
-
-    # generate all exercises possible from the original score excerpt, exercises is a hashmap
-    exercises = get_all_exercises(score_excerpt)
-
-    # add to the json a section for the start and end measures
-    return {
-        "exercises": exercises,
-        "start_measure": start_measure,
-        "end_measure": end_measure
-    }
-
-# common functions
-def get_music21_score_notation(score_filename, start_m=None, end_m=None):
-    """
-    Returns the music21 score notation for the given score filename.
-
-    Expands the score if there is a repeat bar to accurately return the measures between start_m and end_m based on time duration from the frontend determination of start and end measure.
-
-    If start_m and end_m are not provided, the entire score is returned.
-    If start_m and end_m are provided, the score is sliced to return only the measures between start_m and end_m.
-    If start_m is not provided, it defaults to 1.
-    If end_m is not provided, it defaults to the last measure of the score.
-
-    Any invalid start_m or end_m combination will raise an exception.
-    """
-    raw_score = converter.parse(score_filename)
-
-    # if there is a repeat, expand the score by checking if there is a Repeat bar in any part of recurse
-    # TODO: fix this, repeat gets broken when select the first "repeated" section of a score, but no problem if it selects the "second" repeat of the score
-    # if raw_score.recurse().getElementsByClass(bar.Repeat):
-    #     print("there is a repeat")
-    #     expanded_score = raw_score.expandRepeats()
-    #     score = expanded_score
-    # else:
-    #     score = raw_score
-
-    score = raw_score
-
-    if not start_m and not end_m:
-        return score
-    elif not start_m:
-        start_m = 1
-    elif not end_m:
-        end_m = score.parts[0].measure(-1).number
-
-    if start_m < 1 or end_m < 1:
-        raise Exception("start and end measures invalid. start measure and end measure must be greater than 0")
-    if start_m > score.parts[0].measure(-1).number:
-        raise Exception("start and end measures invalid. start measure cannot be greater than total number of measures")
-    if end_m > score.parts[0].measure(-1).number:
-        raise Exception("start and end measures invalid. end measure cannot be greater than total number of measures")
-    if start_m > end_m:
-        raise Exception("start and end measures invalid. start measure cannot be greater than end measure")
-    
-    if start_m == end_m:
-        excerpt = score.measure(start_m)
-    else:
-        excerpt = score.measures(start_m, end_m)
-
-    return excerpt
-
-def get_musicxml_from_music21(score):
-    if score is None:
-        return None
-    
-    if score.isWellFormedNotation():
-        gex = GeneralObjectExporter()
-        scoreBytes = gex.parse(score)
-        scoreBytesUnicode = scoreBytes.decode('utf-8')
-        return scoreBytesUnicode
-    else:
-        raise Exception("Score is not well-formed. Cannot convert to MusicXML.")
-
-def get_music21_from_music_matrix_representation(MMR):
-    """
-    Reconstructs a music21 stream from the matrix representation
-    """
-
-    part = stream.Part()
-    part.insert(0, instrument.Piano())
-    part.insert(0, MMR.key_signature)
-    part.insert(0, MMR.time_signature)
-    
-    num_pitches, num_timesteps = MMR.piano_roll.shape
-
-    if num_pitches == 0:
-        return None
-
-    for t in range(num_timesteps):
-        duration_to_pitches = defaultdict(list)
-
-        for midi_pitch in range(num_pitches):
-            dur = MMR.durations_matrix[midi_pitch, t]
-            if dur > 0:
-                duration_to_pitches[dur].append(midi_pitch)
-        
-        for dur, pitches in duration_to_pitches.items():
-            quarter_length = dur / MMR.quantization
-            offset = t / MMR.quantization
-
-            if len(pitches) > 1:
-                new_chord = chord.Chord(pitches)
-                # NOTE: manually removed the natural but it also might be wrong in certain cases....
-                for p in new_chord.pitches:
-                    if p.accidental and p.accidental == pitch.Accidental('natural'):
-                        p.accidental = None
-                new_chord.quarterLength = quarter_length
-                part.insert(offset, new_chord)
-            else:
-                new_note = note.Note(pitches[0])
-                new_note.quarterLength = quarter_length
-                # NOTE: manually removed the natural but it also might be wrong in certain cases....
-                if new_note.pitch and new_note.pitch.accidental == pitch.Accidental('natural'):
-                    new_note.pitch.accidental = None
-                part.insert(offset, new_note)
-
-    # make measures does not fill up incomplete measures
-    part.makeMeasures(inPlace=True) 
-    part.makeNotation(inPlace=True, useKeySignature=True)  
-    part.makeRests(fillGaps=True, inPlace=True)
-    part.makeAccidentals(inPlace=True)
-    part.makeTies(inPlace=True)
-    return part
+            for line in part.lines:
+                description = "Original voice before any modifications"
+                # if len(part.lines) > 1:
+                l['Line Level Original'].append((description, get_musicxml_from_music21(line.original_stream)))
+                for exercise_name, exercises in line.exercises.items():
+                    # l['line_generated_exercise'].append(get_musicxml_from_music21(exercise))
+                    for exercise in exercises:
+                        # improve the descriptions + tooltip
+                        description = f"Exercise generated by modifying the rhythm pattern to {exercise_name}"
+                        l["Line Level Exercise: " + exercise_name].append((description, get_musicxml_from_music21(exercise)))
+        return l
 
 class Score:
     def __init__(self, filename):
@@ -794,92 +536,3 @@ class ExerciseLine:
                     c += dur
 
         return new_piano_roll
-
-# TODO: clean up structure
-def get_all_exercises(score):
-    # turn l into a hashmap
-    l = defaultdict(list)
-
-    exerciseScore = ExerciseScore(score)
-
-    # if the score has multiple lines, we want to display the entire score together, otherwise we don't display score-level since it's the same as part-level
-    # if len(exerciseScore.parts) > 1:
-    description = "Full score showing all parts together"
-    l['Score Level'].append((description, get_musicxml_from_music21(exerciseScore.original_stream)))
-    # else:
-    #     l['Score Level'].append((None, None))
-
-    for part in exerciseScore.parts:
-        # if the part has multiple lines, we want to display the entire part together, otherwise we don't display part-level since it's the same as line-level
-        # if len(part.lines) > 1:
-        # if len(exerciseScore.parts) > 1:
-        description = "Part showing all notes in a part together"
-        l['Part Level'].append((description, get_musicxml_from_music21(part.original_stream)))
-        # else:
-            # l['Part Level'].append((None, None))
-        
-        for line in part.lines:
-            description = "Original voice before any modifications"
-            # if len(part.lines) > 1:
-            l['Line Level Original'].append((description, get_musicxml_from_music21(line.original_stream)))
-            for exercise_name, exercises in line.exercises.items():
-                # l['line_generated_exercise'].append(get_musicxml_from_music21(exercise))
-                for exercise in exercises:
-                    # improve the descriptions + tooltip
-                    description = f"Exercise generated by modifying the rhythm pattern to {exercise_name}"
-                    l["Line Level Exercise: " + exercise_name].append((description, get_musicxml_from_music21(exercise)))
-    return l
-
-# Initialize the scoreToScorehash defaultdict
-scoreToScorehash = defaultdict(str)
-
-@app.on_event("startup")
-async def startup_event():
-    """Load score hashes from Redis when the app starts"""
-    print("Loading score hashes from Redis...")
-    global scoreToScorehash
-    scoreToScorehash = defaultdict(str, db.get_all_hashes())
-    print("Loaded score hashes from Redis")
-
-# Mount the static files directory
-app.mount("/music", StaticFiles(directory="../music"), name="music")
-
-def create_and_upload_slice(score_name: str, musicxml: Optional[str] = None):
-    print("Creating and uploading slice...")
-    client = Client(SOUNDSLICE_APP_ID, SOUNDSLICE_PASSWORD)
-    
-    # Create a new slice
-    res = client.create_slice(
-        name=score_name,
-        artist="Dummy Artist",
-        embed_status=Constants.EMBED_STATUS_ON_ALLOWLIST,
-    )
-    print("Slice created:", res)
-    scorehash = res['scorehash']
-    
-    # Get the XML content
-    if musicxml:
-        # If musicxml is provided in the request, create a BytesIO object
-        fp = BytesIO(musicxml.encode('utf-8'))
-    else:
-        # If no musicxml provided, open the file directly
-        fp = open(score_name, "rb")
-    
-    try:
-        # Upload the notation using the client library
-        client.upload_slice_notation(
-            scorehash=scorehash,
-            fp=fp,
-            callback_url="http://127.0.0.1:5000/slice_callback"
-        )
-    finally:
-        fp.close()
-    
-    # Save the score hash
-    db.save_hash(score_name, scorehash)
-    scoreToScorehash[score_name] = scorehash
-    
-    return scorehash
-
-if __name__ == "__main__":
-    app.run(port=5000)
