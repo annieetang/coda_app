@@ -519,7 +519,9 @@ async function generateExercises() {
         // get the start and end measures from the json
         let start = response_json.start_measure;
         let end = response_json.end_measure;
-        let exercises = response_json.exercises;
+        let exercises = Object.fromEntries(
+            Object.entries(response_json.exercises).reverse()
+        );
 
         // Create filter buttons for each category
         const filterContainer = document.getElementById('filterContainer');
