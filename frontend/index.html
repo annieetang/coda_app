@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coda</title>
+  <link rel="stylesheet" href="dist.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>Coda</h1>
+    <nav class="breadcrumb-nav">
+      <span class="breadcrumb-item" onclick="showLibraryScreen()">Library</span>
+      <span id="pieceTitle" class="breadcrumb-item" onclick="showInitialScreen()"></span>
+      <span id="practiceNav" class="breadcrumb-item" onclick="showExerciseGrid()"></span>
+      <span id="exerciseNav" class="breadcrumb-item"></span>
+    </nav>
+  </header>
+
+  <main class="main-content">
+    <!-- Library Screen (New) -->
+    <div id="libraryScreen" class="screen active">
+      <div class="library-header">
+        <div class="flex justify-between items-center">
+          <h2>Your Music Library</h2>
+          <div class="upload-container">
+            <input type="file" id="scoreUpload" accept=".xml,.musicxml,.mxl" class="hidden" />
+            <button onclick="document.getElementById('scoreUpload').click()" class="upload-button">
+              <i class="fas fa-upload mr-2"></i>
+              Upload Score
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="libraryGrid" class="library-grid">
+        <!-- Score cards will be inserted here dynamically -->
+      </div>
+    </div>
+
+    <!-- Score Screen (Previously Initial Screen) -->
+    <div id="initialScreen" class="screen">
+      <div class="controls-section">
+        <button onclick="showLibraryScreen()" class="back-button mb-4">
+          <i class="fas fa-chevron-left"></i>
+          Back to Library
+        </button>
+        <div class="flex items-center gap-4 mt-4 justify-end">
+          <label for="startMeasure">Start Measure:</label>
+          <input type="number" id="startMeasure" value="1" min="1" class="w-20" />
+          <label for="endMeasure">End Measure:</label>
+          <input type="number" id="endMeasure" value="1" min="1" class="w-20" />
+          <button id="practiceBtn" onclick="generateExercises()" class="generate-button" disabled>Practice</button>
+        </div>
+      </div>
+      <div id="soundsliceContainer"></div>
+    </div>
+
+    <!-- Exercise Grid Screen -->
+    <div id="exerciseGridScreen" class="screen">
+      <div class="p-4">
+        <button onclick="showInitialScreen()" class="back-button">
+          <i class="fas fa-chevron-left"></i>
+          Back to Score
+        </button>
+        <div id="exerciseGrid" class="exercise-grid"></div>
+      </div>
+    </div>
+
+    <!-- Single Exercise Screen -->
+    <div id="exerciseScreen" class="screen">
+      <div class="p-4">
+        <button onclick="showExerciseGrid()" class="back-button">
+          <i class="fas fa-chevron-left"></i>
+          Back to Exercises
+        </button>
+        
+        <div class="max-w-6xl mx-auto">
+          <h2 class="exercise-title text-center"></h2>
+          <div class="exercise-description"></div>
+          <div class="view-toggle">
+            <label class="switch">
+              <input type="checkbox" id="viewToggle">
+              <span class="slider round"></span>
+            </label>
+            <span>Show Interactive Player</span>
+          </div>
+          <div id="osmdContainer" class="view-container active"></div>
+          <div id="soundsliceMiniplayerContainer" class="view-container"></div>
+          
+          <div class="nav-controls fixed bottom-8 w-full left-0 px-8 flex justify-between">
+            <button onclick="previousExercise()" class="nav-button">
+              <i class="fas fa-chevron-left"></i>
+              Previous
+            </button>
+            <button onclick="nextExercise()" class="nav-button">
+              Next
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.7.6/build/opensheetmusicdisplay.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
