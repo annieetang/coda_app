@@ -23,11 +23,12 @@ window.onload = async function () {
 };
 
 async function loadLibrary() {
-    const res = await fetch("http://127.0.0.1:5000/api/list_files");
+    const res = await fetch("https://coda-backend-x2pm.onrender.com/api/list_files");
     const files = await res.json();
     const libraryGrid = document.getElementById("libraryGrid");
     
     files.forEach(async (file) => {
+        console.log(file);
         const card = document.createElement("div");
         card.className = "score-card";
         
@@ -64,7 +65,7 @@ async function loadLibrary() {
         libraryGrid.appendChild(card);
         
         // Load score preview
-        console.log(previewId)
+        console.log("previewid", previewId);
         const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(
             previewId,
             {
@@ -76,7 +77,7 @@ async function loadLibrary() {
         );
         
         try {
-            await osmd.load("../music/" + file, tempTitle = title);
+            await osmd.load(file, tempTitle = title);
             osmd.zoom = 0.4; // Adjust this value to fit your needs
             osmd.title = title;
             await osmd.render();
@@ -107,7 +108,7 @@ async function loadScore(filename) {
         // Enable practice button
         document.getElementById('practiceBtn').disabled = false;
         
-        await loadSoundslice("../music/" + filename);
+        await loadSoundslice(filename);
     } finally {
         hideLoading();
     }
@@ -216,7 +217,7 @@ window.addEventListener('message', async function(event) {
 });
 
 async function get_measure(second) {
-  const response = await fetch("http://127.0.0.1:5000/api/get_measure_from_second", {
+  const response = await fetch("https://coda-backend-x2pm.onrender.com/api/get_measure_from_second", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename: fileSelected, second: second })
@@ -318,7 +319,7 @@ async function loadSoundsliceIframe(src, container, maxAttempts = 10) {
 
 async function getSliceHash(filename, musicxml = null) {
   const payload = musicxml ? { filename, musicxml } : { filename };
-  const response = await fetch("http://127.0.0.1:5000/api/get_slicehash", {
+  const response = await fetch("https://coda-backend-x2pm.onrender.com/api/get_slicehash", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -377,7 +378,7 @@ async function postMessageAfterLoad(iframe) {
 }
 
 async function testSoundsliceCreate() {
-  const response = await fetch("http://127.0.0.1:5000/api/load_soundslice", {
+  const response = await fetch("https://coda-backend-x2pm.onrender.com/api/load_soundslice", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename: fileSelected })
@@ -476,7 +477,7 @@ async function loadSelected() {
 
     // Enable practice button after successful load
     practiceBtn.disabled = false;
-    selectedFile = "../music/" + selectedFile;
+    selectedFile = selectedFile;
     
     await loadSoundslice(selectedFile);
 }
@@ -494,11 +495,11 @@ async function generateExercises() {
         document.getElementById('practiceNav').textContent = 'Practice';
         document.getElementById('exerciseNav').textContent = '';
         
-        const response = await fetch("http://127.0.0.1:5000/api/generate", {
+        const response = await fetch("https://coda-backend-x2pm.onrender.com/api/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                filename: "../music/" + fileSelected,
+                filename: fileSelected,
                 start_measure: startMeasure,
                 end_measure: endMeasure
             })
@@ -750,8 +751,8 @@ async function manipulateAndRender() {
     const endMeasure = parseInt(document.getElementById("endMeasure").value);
     console.log("Manipulating and rendering MusicXML with range:", startMeasure, endMeasure);
     console.log("Manipulating and rendering MusicXML...");
-    const file = '../music/' + fileSelected;
-    const response = await fetch("http://127.0.0.1:5000/api/generate", {
+    const file = fileSelected;
+    const response = await fetch("https://coda-backend-x2pm.onrender.com/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ filename: file, start_measure: startMeasure, end_measure: endMeasure })
@@ -849,7 +850,7 @@ async function handleFileUpload(event) {
         uploadContainer.appendChild(progress);
 
         // Upload file
-        const response = await fetch('http://127.0.0.1:5000/api/upload_score', {
+        const response = await fetch('https://coda-backend-x2pm.onrender.com/api/upload_score', {
             method: 'POST',
             body: formData
         });

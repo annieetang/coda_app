@@ -4,6 +4,19 @@ from typing import Optional, Dict
 from urllib.parse import urlparse
 
 class RedisDatabase:
+<<<<<<< HEAD:backend/redis_db.py
+    def __init__(self, url: Optional[str] = None):
+        """Initialize Redis connection
+        Args:
+            url: Redis URL string. If None, connects to localhost
+        """
+        if url:
+            self.redis_client = redis.from_url(
+                url,
+                decode_responses=True  # This ensures strings are returned instead of bytes
+            )
+        else:
+=======
     def __init__(self):
         """Initialize Redis connection"""
         redis_url = os.getenv('REDIS_URL')
@@ -21,6 +34,7 @@ class RedisDatabase:
             )
         else:
             # Local development fallback
+>>>>>>> main:redis_db.py
             self.redis_client = redis.Redis(
                 host='localhost',
                 port=6379,

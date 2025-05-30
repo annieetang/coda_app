@@ -7,39 +7,35 @@ from music21 import *
 import numpy as np
 import math
 from collections import defaultdict
-from redis_db import RedisDatabase
+from coda_app.backend.redis_db import RedisDatabase
 from io import BytesIO
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from typing import Optional
 from fastapi.staticfiles import StaticFiles
 from soundsliceapi import Client, Constants
-from config import Config
 
 load_dotenv()
 
 SOUNDSLICE_APP_ID = os.getenv("SOUNDSLICE_APP_ID")
 SOUNDSLICE_PASSWORD = os.getenv("SOUNDSLICE_PASSWORD")
 
-app = FastAPI(title="Coda Backend API")
-
-# Initialize configuration
-Config.initialize()
+app = FastAPI()
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=Config.CORS_ORIGINS,
+    allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
-# Initialize Redis database with configuration
-db = RedisDatabase(Config.REDIS_URL)
+# Initialize Redis database
+db = RedisDatabase()
 
 # Configure upload settings
-UPLOAD_FOLDER = Config.UPLOAD_FOLDER
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "music")
 ALLOWED_EXTENSIONS = {'xml', 'musicxml', 'mxl'}
 
 # Create upload folder if it doesn't exist
@@ -839,9 +835,6 @@ scoreToScorehash = defaultdict(str)
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize any startup requirements"""
-    Config.initialize()
-    
     """Load score hashes from Redis when the app starts"""
     print("Loading score hashes from Redis...")
     global scoreToScorehash
@@ -889,10 +882,4 @@ def create_and_upload_slice(score_name: str, musicxml: Optional[str] = None):
     return scorehash
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "app:app",
-        host=Config.HOST,
-        port=Config.PORT,
-        reload=False  # Disable reload in production
-    )
+    app.run(port=5000)
