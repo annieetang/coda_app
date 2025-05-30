@@ -99,16 +99,29 @@ async function loadLibrary() {
     });
 }
 
-async function loadScore(filename) {
-    console.log("Loading score:", filename);
-    // Set the piece title in breadcrumb
-    const title = filename.replace('.xml', '').replace('.mxl', '').replace(/[_-]/g, ' ');
-    document.getElementById('pieceTitle').textContent = title;
+// Loading overlay helpers
+function showLoading() {
+  document.getElementById('loadingOverlay').style.display = 'flex';
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
 
-    // Enable practice button
-    document.getElementById('practiceBtn').disabled = false;
-    
-    await loadSoundslice("../music/" + filename);
+async function loadScore(filename) {
+    showLoading();
+    try {
+        console.log("Loading score:", filename);
+        // Set the piece title in breadcrumb
+        const title = filename.replace('.xml', '').replace('.mxl', '').replace(/[_-]/g, ' ');
+        document.getElementById('pieceTitle').textContent = title;
+
+        // Enable practice button
+        document.getElementById('practiceBtn').disabled = false;
+        
+        await loadSoundslice("../music/" + filename);
+    } finally {
+        hideLoading();
+    }
 }
 
 // Update showInitialScreen to handle navigation from library
@@ -410,7 +423,7 @@ async function cleanupAndRenderOSMD(container, xml) {
     // Create new instance
     currentOsmdInstance = new opensheetmusicdisplay.OpenSheetMusicDisplay(
         container.id,
-        { drawingParameters: "compacttight" }
+        { drawingParameters: "compacttight", autoResize: true }
     );
     
     try {
@@ -483,169 +496,244 @@ async function loadSelected() {
 
 // Exercise generation and display
 async function generateExercises() {
-    const startMeasure = parseInt(document.getElementById("startMeasure").value);
-    const endMeasure = parseInt(document.getElementById("endMeasure").value);
-    
-    console.log("Generating exercises for range:", startMeasure, endMeasure);
-    
-    // Update breadcrumb
-    document.getElementById('practiceNav').textContent = 'Practice';
-    document.getElementById('exerciseNav').textContent = '';
-    
-    const response = await fetch("http://127.0.0.1:5000/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            filename: "../music/" + fileSelected,
-            start_measure: startMeasure,
-            end_measure: endMeasure
-        })
-    });
-
-    if (!response.ok) {
-        console.error("Failed to generate exercises:", response.statusText);
-        return;
-    }
-
-    const response_json = await response.json();
-    currentExercises = [];
-    
-    // Clear existing grid
-    const grid = document.getElementById('exerciseGrid');
-    grid.innerHTML = '';
-
-    // get the start and end measures from the json
-    let start = response_json.start_measure;
-    let end = response_json.end_measure;
-    let exercises = response_json.exercises;
-
-    // Create exercise cards
-    // First create a container for each type
-    const typeContainers = {};
-    
-    for (const [type, xmlList] of Object.entries(Object.fromEntries(Object.entries(exercises).reverse()))) {
-        if (!xmlList || xmlList.length === 0) continue;
+    showLoading();
+    try {
+        const startMeasure = parseInt(document.getElementById("startMeasure").value);
+        const endMeasure = parseInt(document.getElementById("endMeasure").value);
         
-        // Create a container for this type
-        const typeContainer = document.createElement('div');
-        typeContainer.className = 'exercise-type-container';
+        console.log("Generating exercises for range:", startMeasure, endMeasure);
         
-        // Add a header for this type
-        const typeHeader = document.createElement('h2');
-        typeHeader.className = 'exercise-type-header';
-        typeHeader.textContent = type;
-        typeContainer.appendChild(typeHeader);
+        // Update breadcrumb
+        document.getElementById('practiceNav').textContent = 'Practice';
+        document.getElementById('exerciseNav').textContent = '';
         
-        // Create a grid container for this type's exercises
-        const typeGrid = document.createElement('div');
-        typeGrid.className = 'exercise-type-grid';
-        typeContainer.appendChild(typeGrid);
-        
-        // Add the type container to the main grid
-        grid.appendChild(typeContainer);
-        typeContainers[type] = typeGrid;
-        
-        xmlList.forEach(([description, xml], index) => {
-            if (!xml) return;
-            
-            const exercise = {
-                type,
-                xml,
-                index: currentExercises.length,
-                description
-            };
-            currentExercises.push(exercise);
-            
-            // Create preview card
-            const card = document.createElement('div');
-            card.className = 'exercise-card';
-
-            // create a description place inside the card
-            const descriptionContainer = document.createElement('div');
-            descriptionContainer.className = 'exercise-description';
-            descriptionContainer.innerHTML = description;
-            
-            // Create container for OSMD
-            const previewContainer = document.createElement('div');
-            previewContainer.id = `preview-${exercise.index}`;
-            previewContainer.className = 'exercise-preview';
-            
-            card.innerHTML = `<h3 class="exercise-title">Exercise ${index + 1}</h3>`;
-            card.appendChild(descriptionContainer);
-            card.appendChild(previewContainer);
-            typeContainers[type].appendChild(card);
-            card.onclick = () => showExercise(exercise.index, start, end);
-            
-            // Render preview after container is in DOM
-            const preview = new opensheetmusicdisplay.OpenSheetMusicDisplay(
-                `preview-${exercise.index}`,
-                { drawingParameters: "compacttight" }
-            );
-            preview.load(xml)
-                .then(() => preview.render())
-                .catch(error => {
-                    console.error("Failed to load preview:", error);
-                });
+        const response = await fetch("http://127.0.0.1:5000/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                filename: "../music/" + fileSelected,
+                start_measure: startMeasure,
+                end_measure: endMeasure
+            })
         });
+
+        if (!response.ok) {
+            console.error("Failed to generate exercises:", response.statusText);
+            return;
+        }
+
+        const response_json = await response.json();
+        currentExercises = [];
+        
+        // Clear existing grid
+        const grid = document.getElementById('exerciseGrid');
+        grid.innerHTML = '';
+
+        // get the start and end measures from the json
+        let start = response_json.start_measure;
+        let end = response_json.end_measure;
+        let exercises = response_json.exercises;
+
+        // Create filter buttons for each category
+        const filterContainer = document.getElementById('filterContainer');
+        filterContainer.innerHTML = '<button class="filter-button active" data-category="all">All Exercises</button>';
+        
+        // Get unique categories
+        const categories = Object.keys(exercises).reverse();
+        
+        // Create filter buttons
+        categories.forEach(category => {
+            const button = document.createElement('button');
+            button.className = 'filter-button';
+            button.setAttribute('data-category', category);
+            button.textContent = category;
+            filterContainer.appendChild(button);
+        });
+
+        // Add click handlers to filter buttons
+        const filterButtons = document.querySelectorAll('.filter-button');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active state of buttons
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // Show/hide exercise containers based on category
+                const selectedCategory = button.getAttribute('data-category');
+                const containers = document.querySelectorAll('.exercise-type-container');
+                containers.forEach(container => {
+                    if (selectedCategory === 'all' || container.getAttribute('data-category') === selectedCategory) {
+                        container.classList.remove('hidden-category');
+                    } else {
+                        container.classList.add('hidden-category');
+                    }
+                });
+            });
+        });
+
+        // Create exercise cards
+        // First create a container for each type
+        const typeContainers = {};
+        
+        for (const [type, xmlList] of Object.entries(Object.fromEntries(Object.entries(exercises).reverse()))) {
+            if (!xmlList || xmlList.length === 0) continue;
+            
+            // Create a container for this type
+            const typeContainer = document.createElement('div');
+            typeContainer.className = 'exercise-type-container';
+            typeContainer.setAttribute('data-category', type);
+            
+            // Add a header for this type
+            const typeHeader = document.createElement('h2');
+            typeHeader.className = 'exercise-type-header';
+            typeHeader.textContent = type;
+            typeContainer.appendChild(typeHeader);
+            
+            // Create a grid container for this type's exercises
+            const typeGrid = document.createElement('div');
+            typeGrid.className = 'exercise-type-grid';
+            typeContainer.appendChild(typeGrid);
+            
+            // Add the type container to the main grid
+            grid.appendChild(typeContainer);
+            typeContainers[type] = typeGrid;
+            
+            xmlList.forEach(([description, xml], index) => {
+                if (!xml) return;
+                
+                const exercise = {
+                    type,
+                    xml,
+                    index: currentExercises.length,
+                    description
+                };
+                currentExercises.push(exercise);
+                
+                // Create preview card
+                const card = document.createElement('div');
+                card.className = 'exercise-card';
+
+                // create a description place inside the card
+                const descriptionContainer = document.createElement('div');
+                descriptionContainer.className = 'exercise-description';
+                descriptionContainer.innerHTML = description;
+                
+                // Create container for OSMD
+                const previewContainer = document.createElement('div');
+                previewContainer.id = `preview-${exercise.index}`;
+                previewContainer.className = 'exercise-preview';
+                
+                card.innerHTML = `<h3 class="exercise-title">Exercise ${index + 1}</h3>`;
+                card.appendChild(descriptionContainer);
+                card.appendChild(previewContainer);
+                typeContainers[type].appendChild(card);
+                card.onclick = () => showExercise(exercise.index, start, end);
+                
+                // Render preview after container is in DOM
+                const preview = new opensheetmusicdisplay.OpenSheetMusicDisplay(
+                    `preview-${exercise.index}`,
+                    { drawingParameters: "compacttight" }
+                );
+                preview.load(xml)
+                    .then(() => preview.render())
+                    .catch(error => {
+                        console.error("Failed to load preview:", error);
+                    });
+            });
+        }
+        showExerciseGrid();
+    } finally {
+        hideLoading();
     }
-    showExerciseGrid();
 }
 
 // Single exercise display
 async function showExercise(index, start_m, end_m) {
-    currentExerciseIndex = index;
-    const exercise = currentExercises[index];
-    
-    // Update breadcrumb and title
-    const exerciseTitle = `${exercise.type} - Exercise ${currentExerciseIndex + 1}`;
-    document.getElementById('exerciseNav').textContent = exerciseTitle;
-    
-    // Show the exercise screen
-    showScreen('exerciseScreen');
-    
-    // Update the exercise content
-    const exerciseScreen = document.getElementById('exerciseScreen');
-    const contentContainer = exerciseScreen.querySelector('.max-w-6xl');
-    
-    // Update title and description
-    contentContainer.querySelector('.exercise-title').textContent = exerciseTitle;
-    contentContainer.querySelector('.exercise-description').textContent = exercise.description;
+    // showLoading();
+    try {
+        currentExerciseIndex = index;
+        const exercise = currentExercises[index];
+        
+        // Update breadcrumb and title
+        const exerciseTitle = `${exercise.type} - Exercise ${currentExerciseIndex + 1}`;
+        document.getElementById('exerciseNav').textContent = exerciseTitle;
+        
+        // Show the exercise screen
+        showScreen('exerciseScreen');
+        
+        // Update the exercise content
+        const exerciseScreen = document.getElementById('exerciseScreen');
+        const contentContainer = exerciseScreen.querySelector('.max-w-6xl');
+        
+        // Update title and description
+        contentContainer.querySelector('.exercise-title').textContent = exerciseTitle;
+        contentContainer.querySelector('.exercise-description').textContent = exercise.description;
 
-    // Generate the filename for reference
-    exercise_filename_raw = fileSelected.replace('.mxl', '') + "_" + start_m + "_" + end_m + "_" + exercise.index + ".mxl";
-    console.log("Exercise filename raw:", exercise_filename_raw);
-    exercise_filename = exercise_filename_raw.replace(/ /g, '_');
+        // Generate the filename for reference
+        exercise_filename_raw = fileSelected.replace('.mxl', '') + "_" + start_m + "_" + end_m + "_" + exercise.index + ".mxl";
+        console.log("Exercise filename raw:", exercise_filename_raw);
+        exercise_filename = exercise_filename_raw.replace(/ /g, '_');
 
-    // Initialize OSMD view
-    const osmdContainer = document.getElementById('osmdContainer');
-    await cleanupAndRenderOSMD(osmdContainer, exercise.xml);
+        // Initialize OSMD view
+        const osmdContainer = document.getElementById('osmdContainer');
+        await cleanupAndRenderOSMD(osmdContainer, exercise.xml);
 
-    // Start loading Soundslice in the background
-    const soundsliceContainer = document.getElementById('soundsliceMiniplayerContainer');
-    soundsliceContainer.className = 'view-container';
-    loadSoundsliceMiniplayer(exercise_filename, exercise.xml);
+        // Reset notation loaded state and disable toggle
+        notation_loaded = false;
+        const viewToggleLabel = document.querySelector('.switch');
+        const viewToggleText = viewToggleLabel.nextElementSibling;
+        viewToggleLabel.classList.add('disabled');
+        const viewToggle = document.getElementById('viewToggle');
+        viewToggle.disabled = true;
+        viewToggle.checked = false;
+        const viewToggleSlider = viewToggle.nextElementSibling;
+        viewToggleSlider.classList.add('disabled');
+        viewToggleText.textContent = 'Loading Interactive Player...';
 
-    // Set up toggle behavior
-    const viewToggle = document.getElementById('viewToggle');
-    viewToggle.checked = false; // Reset to OSMD view by default
-    
-    // Remove any existing event listeners
-    const newViewToggle = viewToggle.cloneNode(true);
-    viewToggle.parentNode.replaceChild(newViewToggle, viewToggle);
-    
-    // Add new event listener
-    newViewToggle.addEventListener('change', function() {
-        if (this.checked) {
-            osmdContainer.classList.remove('active');
-            soundsliceContainer.classList.add('active');
-        } else {
-            soundsliceContainer.classList.remove('active');
-            osmdContainer.classList.add('active');
-        }
-    });
+        // Start loading Soundslice in the background
+        const soundsliceContainer = document.getElementById('soundsliceMiniplayerContainer');
+        soundsliceContainer.className = 'view-container';
+        await loadSoundsliceMiniplayer(exercise_filename, exercise.xml);
+        
+        // Set up toggle behavior
+        const newViewToggle = viewToggle.cloneNode(true);
+        viewToggle.parentNode.replaceChild(newViewToggle, viewToggle);
+        
+        // Add new event listener
+        newViewToggle.addEventListener('change', async function() {
+            if (this.checked) {
+                osmdContainer.classList.remove('active');
+                soundsliceContainer.classList.add('active');
+            } else {
+                soundsliceContainer.classList.remove('active');
+                osmdContainer.classList.add('active');
+            }
+        });
 
-    // Update navigation buttons
-    updateNavigationButtons();
+        // Set up an interval to check for notation loading
+        const checkNotationInterval = setInterval(() => {
+            if (notation_loaded) {
+                viewToggleLabel.classList.remove('disabled');
+                newViewToggle.disabled = false;
+                newViewToggle.nextElementSibling.classList.remove('disabled');
+                viewToggleText.textContent = 'Show Interactive Player';
+                clearInterval(checkNotationInterval);
+            }
+        }, 100);
+
+        // Clear interval after 30 seconds to prevent infinite checking
+        setTimeout(() => {
+            if (!notation_loaded) {
+                clearInterval(checkNotationInterval);
+                viewToggleText.textContent = 'Interactive Player Failed to Load';
+            }
+        }, 30000);
+
+        // Update navigation buttons
+        updateNavigationButtons();
+    } finally {
+        hideLoading();
+    }
 }
 
 function updateNavigationButtons() {

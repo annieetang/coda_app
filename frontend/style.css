@@ -127,8 +127,27 @@
     @apply p-4 space-y-8 max-w-[1600px] mx-auto;
   }
 
+  .filter-container {
+    @apply flex flex-wrap gap-3 px-4 mt-4;
+  }
+
+  .filter-button {
+    @apply px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-700 
+           hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-colors duration-200
+           text-sm font-medium shadow-sm;
+  }
+
+  .filter-button.active {
+    @apply bg-blue-100 text-blue-600 border-blue-200 
+           hover:bg-blue-200 hover:text-blue-700 hover:border-blue-300;
+  }
+
   .exercise-type-container {
-    @apply bg-gray-50 p-6 rounded-xl;
+    @apply bg-gray-50 p-6 rounded-xl transition-all duration-300;
+  }
+
+  .exercise-type-container.hidden-category {
+    @apply hidden;
   }
 
   .exercise-type-header {
@@ -190,8 +209,24 @@
     @apply opacity-0 w-0 h-0;
   }
 
+  .switch.disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .switch.disabled input {
+    @apply cursor-not-allowed;
+  }
+
+  .switch.disabled + span {
+    @apply opacity-50;
+  }
+
   .slider {
     @apply absolute cursor-pointer inset-0 bg-gray-300 transition-all duration-300;
+  }
+
+  .slider.disabled {
+    @apply cursor-not-allowed bg-red-200;
   }
 
   .slider:before {
@@ -200,6 +235,10 @@
 
   input:checked + .slider {
     @apply bg-blue-500;
+  }
+
+  input:checked + .slider.disabled {
+    @apply bg-red-500;
   }
 
   input:checked + .slider:before {
