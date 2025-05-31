@@ -24,8 +24,12 @@ window.onload = async function () {
 
 async function loadLibrary() {
     const res = await fetch("https://coda-backend-x2pm.onrender.com/api/list_files");
+    // const res = await fetch("http://0.0.0.0:5050/api/list_files");
     const files = await res.json();
     const libraryGrid = document.getElementById("libraryGrid");
+
+    // clear the library grid
+    libraryGrid.innerHTML = "";
     
     files.forEach(async (file) => {
         console.log(file);
@@ -77,10 +81,20 @@ async function loadLibrary() {
         );
         
         try {
-            await osmd.load(file, tempTitle = title);
-            osmd.zoom = 0.4; // Adjust this value to fit your needs
-            osmd.title = title;
-            await osmd.render();
+          const response = await fetch("https://coda-backend-x2pm.onrender.com/api/get_file_mxl/", {
+            // const response = await fetch("http://0.0.0.0:5050/api/get_file_mxl/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename: file })
+          });
+          if (!response.ok) {
+            console.error("Failed to get file data:", response.statusText);
+            return;
+          }
+          const mxlData = await response.text(); // Get raw XML text response
+          await osmd.load(mxlData);
+          osmd.zoom = 0.4;
+          await osmd.render();
         } catch (error) {
             console.error("Failed to load preview for", file, error);
             preview.innerHTML = '<div class="error">Preview not available</div>';
