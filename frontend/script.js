@@ -2,6 +2,9 @@ document.querySelector("button").addEventListener("click", function(event) {
   event.preventDefault();
 });
 
+let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
+// let API_URL = "http://0.0.0.0:5050/api/";
+
 // let fileSelector = document.getElementById("fileSelector");
 let fileSelected = "";
 const loadScoreBtn = document.getElementById("loadScoreBtn");
@@ -23,8 +26,7 @@ window.onload = async function () {
 };
 
 async function loadLibrary() {
-    const res = await fetch("https://coda-backend-x2pm.onrender.com/api/list_files");
-    // const res = await fetch("http://0.0.0.0:5050/api/list_files");
+    const res = await fetch(API_URL + "list_files");
     const files = await res.json();
     const libraryGrid = document.getElementById("libraryGrid");
 
@@ -81,18 +83,15 @@ async function loadLibrary() {
         );
         
         try {
-          const response = await fetch("https://coda-backend-x2pm.onrender.com/api/get_file_mxl/", {
-            // const response = await fetch("http://0.0.0.0:5050/api/get_file_mxl/", {
+          const response = await fetch(API_URL + "get_file_mxl/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ filename: file })
           });
-          if (!response.ok) {
-            console.error("Failed to get file data:", response.statusText);
-            return;
-          }
-          const mxlData = await response.text(); // Get raw XML text response
-          await osmd.load(mxlData);
+          const mxlData = await response.arrayBuffer();
+          const mxlDataString = new TextDecoder().decode(mxlData);
+          console.log(mxlDataString);
+          await osmd.load(mxlDataString);
           osmd.zoom = 0.4;
           await osmd.render();
         } catch (error) {
@@ -231,7 +230,7 @@ window.addEventListener('message', async function(event) {
 });
 
 async function get_measure(second) {
-  const response = await fetch("https://coda-backend-x2pm.onrender.com/api/get_measure_from_second", {
+  const response = await fetch(API_URL + "get_measure_from_second", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename: fileSelected, second: second })
@@ -331,12 +330,17 @@ async function loadSoundsliceIframe(src, container, maxAttempts = 10) {
   return loaded;
 }
 
-async function getSliceHash(filename, musicxml = null) {
-  const payload = musicxml ? { filename, musicxml } : { filename };
-  const response = await fetch("https://coda-backend-x2pm.onrender.com/api/get_slicehash", {
+async function getSliceHash(filename, musicxml = null, title = null, composer = null, is_exercise = false) {
+  const response = await fetch(API_URL + "get_slicehash", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ 
+      filename: filename,
+      musicxml: musicxml,
+      title: title,
+      composer: composer,
+      is_exercise: is_exercise
+    })
   });
   
   if (!response.ok) {
@@ -348,10 +352,10 @@ async function getSliceHash(filename, musicxml = null) {
   return data.slicehash;
 }
 
-async function loadSoundslice(filename) {
+async function loadSoundslice(filename, title, composer) {
   console.log("Loading Soundslice...");
   
-  const slicehash = await getSliceHash(filename);
+  const slicehash = await getSliceHash(filename, null, title, composer, false);
   if (!slicehash) return;
   
   console.log("Slicehash:", slicehash);
@@ -362,13 +366,13 @@ async function loadSoundslice(filename) {
   await loadSoundsliceIframe(src, container);
 }
 
-async function loadSoundsliceMiniplayer(filename, musicxml) {
+async function loadSoundsliceMiniplayer(filename, musicxml, title, composer) {
   console.log("Loading Soundslice Miniplayer...");
   
   const container = document.getElementById("soundsliceMiniplayerContainer");
   container.innerHTML = "";
   
-  const slicehash = await getSliceHash(filename, musicxml);
+  const slicehash = await getSliceHash(filename, musicxml, title, composer, true);
   if (!slicehash) {
     container.innerHTML = "<div class='error'>Failed to create slice</div>";
     return;
@@ -392,7 +396,7 @@ async function postMessageAfterLoad(iframe) {
 }
 
 async function testSoundsliceCreate() {
-  const response = await fetch("https://coda-backend-x2pm.onrender.com/api/load_soundslice", {
+  const response = await fetch(API_URL + "load_soundslice", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename: fileSelected })
@@ -473,7 +477,7 @@ function showExerciseGrid() {
 async function showExerciseScreen(exercise_filename, exercise) {
   showScreen('exerciseScreen');
   // load the soundslice miniplayer embed
-  await loadSoundsliceMiniplayer(exercise_filename, exercise.xml);
+  await loadSoundsliceMiniplayer(exercise_filename, exercise.xml, exercise.title, exercise.composer);
 }
 
 // File loading and initial setup
@@ -487,13 +491,14 @@ async function loadSelected() {
     console.log("Loading selected:", selectedFile);
     // Set the piece title in breadcrumb
     const title = selectedFile.replace('.xml', '').replace('.mxl', '');
+    const composer = "";
     document.getElementById('pieceTitle').textContent = title;
 
     // Enable practice button after successful load
     practiceBtn.disabled = false;
     selectedFile = selectedFile;
     
-    await loadSoundslice(selectedFile);
+    await loadSoundslice(selectedFile, title, composer);    
 }
 
 // Exercise generation and display
@@ -509,7 +514,7 @@ async function generateExercises() {
         document.getElementById('practiceNav').textContent = 'Practice';
         document.getElementById('exerciseNav').textContent = '';
         
-        const response = await fetch("https://coda-backend-x2pm.onrender.com/api/generate", {
+        const response = await fetch(API_URL + "generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -697,7 +702,7 @@ async function showExercise(index, start_m, end_m) {
         // Start loading Soundslice in the background
         const soundsliceContainer = document.getElementById('soundsliceMiniplayerContainer');
         soundsliceContainer.className = 'view-container';
-        await loadSoundsliceMiniplayer(exercise_filename, exercise.xml);
+        await loadSoundsliceMiniplayer(exercise_filename, exercise.xml, exercise.title, exercise.composer);
         
         // Set up toggle behavior
         const newViewToggle = viewToggle.cloneNode(true);
@@ -766,7 +771,7 @@ async function manipulateAndRender() {
     console.log("Manipulating and rendering MusicXML with range:", startMeasure, endMeasure);
     console.log("Manipulating and rendering MusicXML...");
     const file = fileSelected;
-    const response = await fetch("https://coda-backend-x2pm.onrender.com/api/generate", {
+    const response = await fetch(API_URL + "generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ filename: file, start_measure: startMeasure, end_measure: endMeasure })
@@ -864,7 +869,7 @@ async function handleFileUpload(event) {
         uploadContainer.appendChild(progress);
 
         // Upload file
-        const response = await fetch('https://coda-backend-x2pm.onrender.com/api/upload_score', {
+        const response = await fetch(API_URL + "upload_score", {
             method: 'POST',
             body: formData
         });
