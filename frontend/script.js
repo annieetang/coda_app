@@ -2,8 +2,8 @@ document.querySelector("button").addEventListener("click", function(event) {
   event.preventDefault();
 });
 
-let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
-// let API_URL = "http://0.0.0.0:5050/api/";
+// let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
+let API_URL = "http://0.0.0.0:5050/api/";
 
 // let fileSelector = document.getElementById("fileSelector");
 let fileSelected = "";
@@ -254,7 +254,7 @@ async function loadSoundsliceIframe(src, container, maxAttempts = 10) {
     const iframe = document.createElement("iframe");
     iframe.id = "ssembed";
     iframe.src = src;
-    iframe.width = "85%";
+    iframe.width = "90%";
     // center the iframe
     iframe.style.margin = "0 auto";
     // if this is the miniplayer, height is - 300, if it's the main one, it should be - 250
@@ -641,7 +641,13 @@ async function generateExercises() {
                 // Render preview after container is in DOM
                 const preview = new opensheetmusicdisplay.OpenSheetMusicDisplay(
                     `preview-${exercise.index}`,
-                    { drawingParameters: "compacttight" }
+                    {
+                      drawTitle: false,
+                      drawPartNames: false,
+                      drawingParameters: "compact",
+                      autoResize: true,
+                      height: 230,
+                    }
                 );
                 preview.load(xml)
                     .then(() => preview.render())
@@ -675,7 +681,7 @@ async function showExercise(index, start_m, end_m) {
         
         // Update title and description
         contentContainer.querySelector('.exercise-title').textContent = exerciseTitle;
-        contentContainer.querySelector('.exercise-description').textContent = exercise.description;
+        contentContainer.querySelector('.exercise-description').innerHTML = exercise.description;
 
         // Generate the filename for reference
         exercise_filename_raw = fileSelected.replace('.mxl', '') + "_" + start_m + "_" + end_m + "_" + exercise.index + ".mxl";

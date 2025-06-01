@@ -45,7 +45,7 @@
           Back to Library
         </button>
         <h2 id="scoreTitleDisplay" class="score-title-display"></h2>
-        <div class="flex items-center gap-4 mt-4 justify-end">
+        <div class="exercise-controls">
           <label for="startMeasure">Start Measure:</label>
           <input type="number" id="startMeasure" value="1" min="1" class="w-20" />
           <label for="endMeasure">End Measure:</label>
@@ -58,7 +58,7 @@
 
     <!-- Exercise Grid Screen -->
     <div id="exerciseGridScreen" class="screen">
-      <div class="p-4">
+      <!-- <div class="p-4"> -->
         <button onclick="showInitialScreen()" class="back-button">
           <i class="fas fa-chevron-left"></i>
           Back to Score
@@ -73,13 +73,13 @@
 
     <!-- Single Exercise Screen -->
     <div id="exerciseScreen" class="screen">
-      <div class="p-4">
-        <button onclick="showExerciseGrid()" class="back-button">
-          <i class="fas fa-chevron-left"></i>
-          Back to Exercises
-        </button>
-        
+      <!-- <div class="p-4"> -->
         <div class="max-w-6xl mx-auto">
+          <button onclick="showExerciseGrid()" class="back-button">
+            <i class="fas fa-chevron-left"></i>
+            Back to Exercises
+          </button>
+          
           <h2 class="exercise-title text-center"></h2>
           <div class="exercise-description"></div>
           <div class="view-toggle">
@@ -92,10 +92,10 @@
           <div id="osmdContainer" class="view-container active"></div>
           <div id="soundsliceMiniplayerContainer" class="view-container"></div>
           
-          <div class="nav-controls fixed bottom-8 w-full left-0 px-8 flex justify-between">
+          <div class="nav-controls">
             <button onclick="previousExercise()" class="nav-button">
               <i class="fas fa-chevron-left"></i>
-              Previous Exercise
+              Prev Exercise
             </button>
             <button onclick="nextExercise()" class="nav-button">
               Next Exercise
@@ -103,7 +103,7 @@
             </button>
           </div>
         </div>
-      </div>
+      <!-- </div> -->
     </div>
   </main>
 
