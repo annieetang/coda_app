@@ -2,8 +2,8 @@ document.querySelector("button").addEventListener("click", function(event) {
   event.preventDefault();
 });
 
-let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
-// let API_URL = "http://0.0.0.0:5050/api/";
+// let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
+let API_URL = "http://0.0.0.0:5050/api/";
 
 // let fileSelector = document.getElementById("fileSelector");
 let fileSelected = "";
@@ -33,8 +33,10 @@ async function loadLibrary() {
     // clear the library grid
     libraryGrid.innerHTML = "";
     
+
     files.forEach(async (file) => {
-        console.log(file);
+        console.log(file['title']);
+        console.log(file['composer']);  
         const card = document.createElement("div");
         card.className = "score-card";
         
@@ -43,7 +45,9 @@ async function loadLibrary() {
         preview.className = "score-preview";
         
         // Create OSMD instance for preview
-        const previewId = `preview-${file.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        // const previewId = `preview-${file.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        // const previewId = `preview-${title.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        const previewId = `preview-${file['title']}`;
         preview.id = previewId;
         
         // Create score info section
@@ -51,20 +55,51 @@ async function loadLibrary() {
         info.className = "score-info";
         
         // Format the title (remove extension and replace underscores/hyphens with spaces)
-        const title = file.replace(/\.(xml|mxl)$/, '').replace(/[_-]/g, ' ');
+        // const title = file.replace(/\.(xml|mxl)$/, '').replace(/[_-]/g, ' ');
         
         info.innerHTML = `
-            <div class="score-title">${title}</div>
-            <div class="score-metadata">[composer here]</div>
+            <div class="score-title">${file['title']}</div>
+            <div class="score-composer">${file['composer']}</div>
         `;
+        
+        // Add delete button
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete-button";
+        deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
+        deleteButton.onclick = async (e) => {
+            e.stopPropagation(); // Prevent card click when clicking delete
+            if (confirm(`Are you sure you want to delete "${file['title']}"?`)) {
+                try {
+                    const response = await fetch(API_URL + "delete_score", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ filename: file['filename'] })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to delete score');
+                    }
+                    
+                    // Remove the card with a fade-out animation
+                    card.style.opacity = '0';
+                    setTimeout(() => {
+                        card.remove();
+                    }, 300); // Match this with CSS transition duration
+                } catch (error) {
+                    console.error('Delete failed:', error);
+                    alert('Failed to delete score. Please try again.');
+                }
+            }
+        };
+        info.appendChild(deleteButton);
         
         card.appendChild(preview);
         card.appendChild(info);
         
         // Add click handler
         card.onclick = async () => {
-            fileSelected = file;
-            await loadScore(file);
+            fileSelected = file['filename']
+            await loadScore(file['filename'], file['title'], file['composer'])
             showInitialScreen();
         };
         
@@ -86,11 +121,11 @@ async function loadLibrary() {
           const response = await fetch(API_URL + "get_file_mxl/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ filename: file })
+            body: JSON.stringify({ filename: file['filename'] })
           });
           const mxlData = await response.arrayBuffer();
           const mxlDataString = new TextDecoder().decode(mxlData);
-          console.log(mxlDataString);
+          // console.log(mxlDataString);
           await osmd.load(mxlDataString);
           osmd.zoom = 0.4;
           await osmd.render();
@@ -109,19 +144,19 @@ function hideLoading() {
   document.getElementById('loadingOverlay').style.display = 'none';
 }
 
-async function loadScore(filename) {
+async function loadScore(filename, title, composer) {
     showLoading();
     try {
         console.log("Loading score:", filename);
         // Set the piece title in breadcrumb and score display
-        const title = filename.replace('.xml', '').replace('.mxl', '').replace(/[_-]/g, ' ');
+        // const title = filename.replace('.xml', '').replace('.mxl', '').replace(/[_-]/g, ' ');
         document.getElementById('pieceTitle').textContent = title;
         document.getElementById('scoreTitleDisplay').textContent = title;
 
         // Enable practice button
         document.getElementById('practiceBtn').disabled = false;
         
-        await loadSoundslice(filename);
+        await loadSoundslice(filename, title, composer);
     } finally {
         hideLoading();
     }
@@ -406,7 +441,7 @@ async function testSoundsliceCreate() {
     return;
   }
   const data = await response.json();
-  console.log("Soundslice data:", data);
+  // console.log("Soundslice data:", data);
 }
 
 // Global variables
@@ -844,14 +879,53 @@ function clearScoreList() {
 }
 
 function setupFileUpload() {
-    const uploadInput = document.getElementById('scoreUpload');
-    uploadInput.addEventListener('change', handleFileUpload);
+    const uploadInput = document.getElementById('modalScoreUpload');
+    uploadInput.addEventListener('change', function(event) {
+        // Update the UI to show the selected file name
+        const fileName = event.target.files[0]?.name || 'No file selected';
+        event.target.parentElement.querySelector('label').textContent = `Selected File: ${fileName}`;
+    });
+
+    // Update the upload button click handler
+    document.querySelector('.upload-button').addEventListener('click', function(event) {
+        event.preventDefault();
+        showUploadModal();
+    });
 }
 
-async function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+function showUploadModal() {
+    document.getElementById('uploadModal').style.display = 'flex';
+    // Reset form
+    document.getElementById('scoreTitle').value = '';
+    document.getElementById('scoreComposer').value = '';
+    document.getElementById('modalScoreUpload').value = '';
+    document.querySelector('.upload-progress-container').style.display = 'none';
+}
 
+function closeUploadModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+}
+
+async function submitUpload() {
+    const titleInput = document.getElementById('scoreTitle');
+    const composerInput = document.getElementById('scoreComposer');
+    const fileInput = document.getElementById('modalScoreUpload');
+    
+    // Validate inputs
+    if (!titleInput.value.trim()) {
+        alert('Please enter a title');
+        return;
+    }
+    if (!composerInput.value.trim()) {
+        alert('Please enter a composer');
+        return;
+    }
+    if (!fileInput.files[0]) {
+        alert('Please select a file');
+        return;
+    }
+
+    const file = fileInput.files[0];
     // Validate file type
     const validTypes = ['.xml', '.musicxml', '.mxl'];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
@@ -863,21 +937,20 @@ async function handleFileUpload(event) {
     // Create form data
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('title', titleInput.value.trim());
+    formData.append('composer', composerInput.value.trim());
 
-    // Get upload container reference before try block
-    const uploadContainer = document.querySelector('.upload-container');
-    let progress = null;
+    // Show progress container
+    const progressContainer = document.querySelector('.upload-progress-container');
+    const progressBar = progressContainer.querySelector('.upload-progress-bar');
+    progressContainer.style.display = 'block';
+    progressBar.style.width = '0%';
 
     try {
-        // Show upload progress
-        progress = document.createElement('div');
-        progress.className = 'upload-progress';
-        const progressBar = document.createElement('div');
-        progressBar.className = 'upload-progress-bar';
-        progress.appendChild(progressBar);
-        uploadContainer.appendChild(progress);
-
         // Upload file
+        console.log(titleInput.value.trim());
+        console.log(composerInput.value.trim());
+        // console.log(file);
         const response = await fetch(API_URL + "upload_score", {
             method: 'POST',
             body: formData
@@ -891,9 +964,7 @@ async function handleFileUpload(event) {
         // Show success state
         progressBar.style.width = '100%';
         setTimeout(() => {
-            if (progress && progress.parentNode) {
-                progress.remove();
-            }
+            closeUploadModal();
             // Reload library to show new file
             loadLibrary();
         }, 1000);
@@ -901,14 +972,17 @@ async function handleFileUpload(event) {
     } catch (error) {
         console.error('Upload failed:', error);
         alert(error.message || 'Failed to upload file. Please try again.');
-        if (progress && progress.parentNode) {
-            progress.remove();
-        }
+        progressContainer.style.display = 'none';
     }
-
-    // Reset file input
-    event.target.value = '';
 }
+
+// Add event listener to close modal when clicking outside
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('uploadModal');
+    if (event.target === modal) {
+        closeUploadModal();
+    }
+});
 
 async function toggleOriginalExcerpt() {
     const container = document.getElementById('originalExcerptContainer');

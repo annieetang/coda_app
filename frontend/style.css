@@ -55,6 +55,7 @@
     @apply bg-white rounded-lg shadow-sm border border-gray-200 
            hover:shadow-md hover:border-blue-400 transition-all cursor-pointer
            overflow-hidden;
+    transition: opacity 0.3s ease-in-out;
   }
 
   .score-preview {
@@ -260,6 +261,17 @@
   .slider.round:before {
     @apply rounded-full;
   }
+
+  .delete-button {
+    @apply absolute top-4 right-4 p-2 rounded-full bg-white text-gray-400 
+           hover:text-red-500 hover:bg-red-50 transition-colors duration-200
+           opacity-0 group-hover:opacity-100;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .score-card:hover .delete-button {
+    @apply opacity-100;
+  }
 }
 
 .loading {
@@ -275,4 +287,75 @@
   color: #d32f2f;
   background-color: #ffebee;
   border-radius: 4px;
+}
+
+/* Modal Styles */
+.modal {
+  @apply fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center;
+}
+
+.modal-content {
+  @apply bg-white rounded-lg shadow-xl w-[500px] max-w-[90%];
+}
+
+.modal-header {
+  @apply flex justify-between items-center p-6 border-b border-gray-200;
+}
+
+.modal-header h3 {
+  @apply text-xl font-bold text-gray-800;
+}
+
+.close-button {
+  @apply text-gray-500 hover:text-gray-700 text-2xl font-bold bg-transparent p-0;
+}
+
+.modal-body {
+  @apply p-6 space-y-4;
+}
+
+.form-group {
+  @apply flex flex-col gap-2;
+}
+
+.form-group label {
+  @apply text-sm font-medium text-gray-700;
+}
+
+.modal-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.file-input {
+  @apply block w-full text-sm text-gray-500
+    file:mr-4 file:py-2 file:px-4
+    file:rounded-md file:border-0
+    file:text-sm file:font-semibold
+    file:bg-blue-50 file:text-blue-700
+    hover:file:bg-blue-100;
+}
+
+.modal-footer {
+  @apply flex justify-end gap-4 p-6 border-t border-gray-200;
+}
+
+.cancel-button {
+  @apply px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50;
+}
+
+.submit-button {
+  @apply px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700;
+}
+
+.upload-progress-container {
+  @apply mt-4;
+}
+
+.upload-progress {
+  @apply w-full h-2 bg-gray-200 rounded-full overflow-hidden;
+}
+
+.upload-progress-bar {
+  @apply h-full bg-blue-500 transition-all duration-300;
+  width: 0%;
 } 

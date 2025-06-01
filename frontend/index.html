@@ -24,8 +24,7 @@
         <div class="flex justify-between items-center">
           <h2>Your Music Library</h2>
           <div class="upload-container">
-            <input type="file" id="scoreUpload" accept=".xml,.musicxml,.mxl" class="hidden" />
-            <button onclick="document.getElementById('scoreUpload').click()" class="upload-button">
+            <button class="upload-button">
               <i class="fas fa-upload mr-2"></i>
               Upload Score
             </button>
@@ -136,7 +135,38 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.7.6/build/opensheetmusicdisplay.min.js"></script>
   <script src="script.js"></script>
-</body>
-</html>
 
+  <!-- Upload Modal -->
+  <div id="uploadModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Upload Score</h3>
+        <button onclick="closeUploadModal()" class="close-button">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="scoreTitle">Title:</label>
+          <input type="text" id="scoreTitle" class="modal-input" required>
+        </div>
+        <div class="form-group">
+          <label for="scoreComposer">Composer:</label>
+          <input type="text" id="scoreComposer" class="modal-input" required>
+        </div>
+        <div class="form-group">
+          <label for="modalScoreUpload">Select File:</label>
+          <input type="file" id="modalScoreUpload" accept=".xml,.musicxml,.mxl" class="file-input" required>
+        </div>
+        <div class="upload-progress-container" style="display: none;">
+          <div class="upload-progress">
+            <div class="upload-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeUploadModal()" class="cancel-button">Cancel</button>
+        <button onclick="submitUpload()" class="submit-button">Upload</button>
+      </div>
+    </div>
+  </div>
+</body>
 </html>
