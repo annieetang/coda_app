@@ -1067,6 +1067,7 @@ select, input {
 
 .exercise-preview {
   display: flex;
+  height: 230px;
   align-items: flex-start;
   justify-content: center;
   overflow: hidden;
@@ -1074,6 +1075,9 @@ select, input {
   white-space: nowrap;
   padding-top: 1rem;
   padding-bottom: 1rem;
+  --tw-shadow: 0 8px 6px -6px rgba(0,0,0,0.1);
+  --tw-shadow-colored: 0 8px 6px -6px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
 /* Navigation Controls */
@@ -1114,12 +1118,10 @@ button:disabled {
 }
 
 .view-container.active {
-  z-index: 10;
-  margin-left: 1rem;
-  margin-right: 1rem;
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
-  display: block;
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 /* Toggle Switch */

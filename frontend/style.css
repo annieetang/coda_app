@@ -183,7 +183,7 @@
   }
 
   .exercise-preview {
-    @apply overflow-hidden flex items-start justify-center whitespace-nowrap text-clip py-4;
+    @apply overflow-hidden flex items-start justify-center whitespace-nowrap text-clip py-4 h-[230px] shadow-[0_8px_6px_-6px_rgba(0,0,0,0.1)];
   }
 
   /* Navigation Controls */
@@ -205,7 +205,7 @@
   }
 
   .view-container.active {
-    @apply block mx-4 my-6 z-10;
+    @apply flex items-start justify-center w-full;
   }
 
   /* Toggle Switch */
