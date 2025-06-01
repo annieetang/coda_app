@@ -10,6 +10,8 @@ let fileSelected = "";
 const loadScoreBtn = document.getElementById("loadScoreBtn");
 const practiceBtn = document.getElementById("practiceBtn");
 
+let originalExcerpt = null;
+
 // Enable/disable buttons based on file selection
 if (fileSelected) {
   fileSelected.addEventListener("change", function() {
@@ -577,6 +579,10 @@ async function generateExercises() {
         let exercises = Object.fromEntries(
             Object.entries(response_json.exercises).reverse()
         );
+        let original = response_json.exercises["Score Level"]
+        console.log(original);
+        originalExcerpt = original[0][1];
+        console.log(originalExcerpt);
 
         // Create filter buttons for each category
         const filterContainer = document.getElementById('filterContainer');
@@ -1001,27 +1007,21 @@ async function toggleOriginalExcerpt() {
 }
 
 async function displayOriginalExcerpt() {
-    const exercise = currentExercises[currentExerciseIndex];
-    if (!exercise) {
-        console.error("No exercise data available");
-        return;
-    }
-
-    const container = document.getElementById('originalExcerptContainer');
-    
-    // Create a new OSMD instance for the original excerpt
-    const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(container, {
-        drawTitle: false,
-        drawMeasureNumbers: true,
-        drawingParameters: "compacttight"
-    });
-    
-    try {
-        await osmd.load(exercise.xml);
-        osmd.zoom = 1;
-        await osmd.render();
-    } catch (error) {
-        console.error("Failed to load original excerpt:", error);
-        container.innerHTML = '<div class="error">Failed to load original excerpt</div>';
-    }
+  const container = document.getElementById('originalExcerptContainer');
+  
+  // Create a new OSMD instance for the original excerpt
+  const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(container, {
+      drawTitle: false,
+      drawMeasureNumbers: true,
+      drawingParameters: "compacttight"
+  });
+  
+  try {
+      await osmd.load(originalExcerpt)
+      osmd.zoom = 1;
+      await osmd.render();
+  } catch (error) {
+      console.error("Failed to load original excerpt:", error);
+      container.innerHTML = '<div class="error">Failed to load original excerpt</div>';
+  }
 }

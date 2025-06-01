@@ -145,16 +145,16 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label for="scoreTitle">Title:</label>
+          <label for="modalScoreUpload">*Select File (Music XML Only):</label>
+          <input type="file" id="modalScoreUpload" accept=".xml,.musicxml,.mxl" class="file-input" required>
+        </div>
+        <div class="form-group">
+          <label for="scoreTitle">*Title:</label>
           <input type="text" id="scoreTitle" class="modal-input" required>
         </div>
         <div class="form-group">
-          <label for="scoreComposer">Composer:</label>
+          <label for="scoreComposer">*Composer:</label>
           <input type="text" id="scoreComposer" class="modal-input" required>
-        </div>
-        <div class="form-group">
-          <label for="modalScoreUpload">Select File:</label>
-          <input type="file" id="modalScoreUpload" accept=".xml,.musicxml,.mxl" class="file-input" required>
         </div>
         <div class="upload-progress-container" style="display: none;">
           <div class="upload-progress">
