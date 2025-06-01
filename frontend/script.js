@@ -684,7 +684,7 @@ async function showExercise(index, start_m, end_m) {
 
         // Initialize OSMD view
         const osmdContainer = document.getElementById('osmdContainer');
-        osmdContainer.className = 'view-container active';  // Set initial state to active
+        osmdContainer.classList.add('active');
         await cleanupAndRenderOSMD(osmdContainer, exercise.xml);
 
         // Reset notation loaded state and disable toggle
@@ -701,7 +701,7 @@ async function showExercise(index, start_m, end_m) {
 
         // Start loading Soundslice in the background
         const soundsliceContainer = document.getElementById('soundsliceMiniplayerContainer');
-        soundsliceContainer.className = 'view-container';  // Initially not active
+        soundsliceContainer.className = 'view-container';
         await loadSoundsliceMiniplayer(exercise_filename, exercise.xml, exercise.title, exercise.composer);
         
         // Set up toggle behavior
@@ -711,11 +711,11 @@ async function showExercise(index, start_m, end_m) {
         // Add new event listener
         newViewToggle.addEventListener('change', async function() {
             if (this.checked) {
-                osmdContainer.classList.toggle('active');
-                soundsliceContainer.classList.toggle('active');
+                osmdContainer.classList.remove('active');
+                soundsliceContainer.classList.add('active');
             } else {
-                soundsliceContainer.classList.toggle('active');
-                osmdContainer.classList.toggle('active');
+                soundsliceContainer.classList.remove('active');
+                osmdContainer.classList.add('active');
             }
         });
 

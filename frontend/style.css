@@ -197,7 +197,7 @@
   }
 
   .view-container {
-    @apply my-5 mx-8;
+    @apply my-5 mx-8 hidden;
   }
 
   .view-container.active {
@@ -242,7 +242,7 @@
   }
 
   input:checked + .slider.disabled {
-    @apply bg-red-500;
+    @apply hidden;
   }
 
   input:checked + .slider:before {
