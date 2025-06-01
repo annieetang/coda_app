@@ -75,10 +75,16 @@
     <div id="exerciseScreen" class="screen">
       <!-- <div class="p-4"> -->
         <div class="max-w-6xl mx-auto">
-          <button onclick="showExerciseGrid()" class="back-button">
-            <i class="fas fa-chevron-left"></i>
-            Back to Exercises
-          </button>
+          <div class="flex justify-between items-center mb-4">
+            <button onclick="showExerciseGrid()" class="back-button">
+              <i class="fas fa-chevron-left"></i>
+              Back to Exercises
+            </button>
+            <button onclick="toggleOriginalExcerpt()" class="back-button">
+              <i class="fas fa-music"></i>
+              Show Original Excerpt
+            </button>
+          </div>
           
           <h2 class="exercise-title text-center"></h2>
           <div class="exercise-description"></div>
@@ -91,6 +97,7 @@
           </div>
           <div id="osmdContainer" class="view-container active"></div>
           <div id="soundsliceMiniplayerContainer" class="view-container"></div>
+          <div id="originalExcerptContainer" class="view-container mt-4 bg-blue-50" style="display: none;"></div>
           
           <div class="nav-controls">
             <button onclick="previousExercise()" class="nav-button">

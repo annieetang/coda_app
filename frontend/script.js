@@ -2,8 +2,8 @@ document.querySelector("button").addEventListener("click", function(event) {
   event.preventDefault();
 });
 
-// let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
-let API_URL = "http://0.0.0.0:5050/api/";
+let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
+// let API_URL = "http://0.0.0.0:5050/api/";
 
 // let fileSelector = document.getElementById("fileSelector");
 let fileSelected = "";
@@ -442,16 +442,16 @@ async function cleanupAndRenderOSMD(container, xml) {
 }
 
 function showScreen(screenId) {
-    // // Clean up OSMD when leaving exercise screen
-    // if (screenId !== 'exerciseScreen' && currentOsmdInstance) {
-    //     currentOsmdInstance.clear();
-    //     currentOsmdInstance = null;
-    // }
-    
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
     });
     document.getElementById(screenId).classList.add('active');
+    
+    // Update visibility of Show Original Excerpt button
+    const originalExcerptButtons = document.querySelectorAll('button[onclick="toggleOriginalExcerpt()"]');
+    originalExcerptButtons.forEach(button => {
+        button.style.visibility = screenId === 'exerciseScreen' ? 'visible' : 'hidden';
+    });
     
     // Update breadcrumb visibility based on screen
     if (screenId === 'libraryScreen') {
@@ -908,4 +908,46 @@ async function handleFileUpload(event) {
 
     // Reset file input
     event.target.value = '';
+}
+
+async function toggleOriginalExcerpt() {
+    const container = document.getElementById('originalExcerptContainer');
+    const button = event.target.closest('button');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        if (!container.hasChildNodes()) {
+            await displayOriginalExcerpt();
+        }
+        button.innerHTML = '<i class="fas fa-music"></i> Hide Original Excerpt';
+    } else {
+        container.style.display = 'none';
+        button.innerHTML = '<i class="fas fa-music"></i> Show Original Excerpt';
+    }
+}
+
+async function displayOriginalExcerpt() {
+    const exercise = currentExercises[currentExerciseIndex];
+    if (!exercise) {
+        console.error("No exercise data available");
+        return;
+    }
+
+    const container = document.getElementById('originalExcerptContainer');
+    
+    // Create a new OSMD instance for the original excerpt
+    const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(container, {
+        drawTitle: false,
+        drawMeasureNumbers: true,
+        drawingParameters: "compacttight"
+    });
+    
+    try {
+        await osmd.load(exercise.xml);
+        osmd.zoom = 1;
+        await osmd.render();
+    } catch (error) {
+        console.error("Failed to load original excerpt:", error);
+        container.innerHTML = '<div class="error">Failed to load original excerpt</div>';
+    }
 }
