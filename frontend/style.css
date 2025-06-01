@@ -197,7 +197,7 @@
   }
 
   .view-container {
-    @apply hidden my-5 mx-8;
+    @apply my-5 mx-8;
   }
 
   .view-container.active {
@@ -230,7 +230,7 @@
   }
 
   .slider.disabled {
-    @apply cursor-not-allowed bg-red-200;
+    @apply hidden;
   }
 
   .slider:before {

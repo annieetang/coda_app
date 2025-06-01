@@ -442,11 +442,11 @@ async function cleanupAndRenderOSMD(container, xml) {
 }
 
 function showScreen(screenId) {
-    // Clean up OSMD when leaving exercise screen
-    if (screenId !== 'exerciseScreen' && currentOsmdInstance) {
-        currentOsmdInstance.clear();
-        currentOsmdInstance = null;
-    }
+    // // Clean up OSMD when leaving exercise screen
+    // if (screenId !== 'exerciseScreen' && currentOsmdInstance) {
+    //     currentOsmdInstance.clear();
+    //     currentOsmdInstance = null;
+    // }
     
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
@@ -658,7 +658,6 @@ async function generateExercises() {
 
 // Single exercise display
 async function showExercise(index, start_m, end_m) {
-    // showLoading();
     try {
         currentExerciseIndex = index;
         const exercise = currentExercises[index];
@@ -685,6 +684,7 @@ async function showExercise(index, start_m, end_m) {
 
         // Initialize OSMD view
         const osmdContainer = document.getElementById('osmdContainer');
+        osmdContainer.className = 'view-container active';  // Set initial state to active
         await cleanupAndRenderOSMD(osmdContainer, exercise.xml);
 
         // Reset notation loaded state and disable toggle
@@ -701,7 +701,7 @@ async function showExercise(index, start_m, end_m) {
 
         // Start loading Soundslice in the background
         const soundsliceContainer = document.getElementById('soundsliceMiniplayerContainer');
-        soundsliceContainer.className = 'view-container';
+        soundsliceContainer.className = 'view-container';  // Initially not active
         await loadSoundsliceMiniplayer(exercise_filename, exercise.xml, exercise.title, exercise.composer);
         
         // Set up toggle behavior
@@ -711,11 +711,11 @@ async function showExercise(index, start_m, end_m) {
         // Add new event listener
         newViewToggle.addEventListener('change', async function() {
             if (this.checked) {
-                osmdContainer.classList.remove('active');
-                soundsliceContainer.classList.add('active');
+                osmdContainer.classList.toggle('active');
+                soundsliceContainer.classList.toggle('active');
             } else {
-                soundsliceContainer.classList.remove('active');
-                osmdContainer.classList.add('active');
+                soundsliceContainer.classList.toggle('active');
+                osmdContainer.classList.toggle('active');
             }
         });
 
@@ -748,21 +748,24 @@ async function showExercise(index, start_m, end_m) {
 function updateNavigationButtons() {
     const prevButton = document.querySelector('.nav-controls button:first-child');
     const nextButton = document.querySelector('.nav-controls button:last-child');
-    
-    prevButton.style.visibility = currentExerciseIndex > 0 ? 'visible' : 'hidden';
-    nextButton.style.visibility = currentExerciseIndex < currentExercises.length - 1 ? 'visible' : 'hidden';
 }
 
 async function previousExercise() {
-    if (currentExerciseIndex > 0) {
-        await showExercise(currentExerciseIndex - 1);
-    }
+  if (currentExerciseIndex > 0) {
+      await showExercise(currentExerciseIndex - 1, start_measure, end_measure);
+  } else {
+    // wrap around
+    await showExercise(currentExercises.length - 1, start_measure, end_measure);
+  }
 }
 
 async function nextExercise() {
-    if (currentExerciseIndex < currentExercises.length - 1) {
-        await showExercise(currentExerciseIndex + 1);
-    }
+  if (currentExerciseIndex < currentExercises.length - 1) {
+      await showExercise(currentExerciseIndex + 1, start_measure, end_measure);
+  } else {
+    // wrap around
+    await showExercise(0, start_measure, end_measure);
+  }
 }
 
 async function manipulateAndRender() {
