@@ -2,8 +2,8 @@ document.querySelector("button").addEventListener("click", function(event) {
   event.preventDefault();
 });
 
-// let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
-let API_URL = "http://0.0.0.0:5050/api/";
+let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
+// let API_URL = "http://0.0.0.0:5050/api/";
 
 // let fileSelector = document.getElementById("fileSelector");
 let fileSelected = "";
