@@ -2,8 +2,8 @@ document.querySelector("button").addEventListener("click", function(event) {
   event.preventDefault();
 });
 
-let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
-// let API_URL = "http://0.0.0.0:5050/api/";
+// let API_URL = "https://coda-backend-x2pm.onrender.com/api/";
+let API_URL = "http://0.0.0.0:5050/api/";
 
 // let fileSelector = document.getElementById("fileSelector");
 let fileSelected = "";
@@ -198,7 +198,6 @@ window.addEventListener('message', async function(event) {
       start_second = 0;
     }
     if (end_second < 0) {
-      // end_second = total_seconds;
       end_second = start_second;
     }
 
@@ -207,22 +206,35 @@ window.addEventListener('message', async function(event) {
       clearTimeout(loopChangeTimer);
     }
 
-    // Set new timer
+    // Set new timer with debouncing
     loopChangeTimer = setTimeout(async () => {
-      // post a message to api to get measure
-      console.log("making API call to get measures from seconds");
-      var s_measure = await get_measure(start_second);
-      document.getElementById("startMeasure").value = s_measure;
+      try {
+        console.log("Making API call to get measures from seconds");
+        const response = await fetch(API_URL + "get_measures_from_seconds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            filename: fileSelected,
+            start_second: start_second,
+            end_second: end_second
+          })
+        });
 
-      var e_measure = await get_measure(end_second);
+        if (!response.ok) {
+          throw new Error("Failed to get measures");
+        }
 
-      if (e_measure < s_measure) {
-        e_measure = s_measure;
+        const { start_measure, end_measure } = await response.json();
+        
+        // Update UI with measures
+        document.getElementById("startMeasure").value = start_measure;
+        document.getElementById("endMeasure").value = end_measure >= start_measure ? end_measure : start_measure;
+      } catch (error) {
+        console.error("Error getting measures:", error);
+      } finally {
+        loopChangeTimer = null;
       }
-
-      document.getElementById("endMeasure").value = e_measure;
-      loopChangeTimer = null;
-    }, 500); // Wait 1 second after last loop change
+    }, 500); // 500ms debounce delay
 
   } else if (cmd.method === 'ssSeek') {
     // console.log('seek to ' + cmd.arg);
@@ -237,6 +249,10 @@ window.addEventListener('message', async function(event) {
   }
   if (cmd.method === 'ssCurrentBar') {
     console.log('Current bar is ' + cmd.arg);
+    start_measure = cmd.arg;
+    end_measure = cmd.arg;
+    document.getElementById("startMeasure").value = start_measure;
+    document.getElementById("endMeasure").value = end_measure;
   }
   if (cmd.method === 'ssBarCount') {
     console.log('Total bar count is ' + cmd.arg);
@@ -267,17 +283,17 @@ window.addEventListener('message', async function(event) {
 });
 
 async function get_measure(second) {
-  const response = await fetch(API_URL + "get_measure_from_second", {
+  const response = await fetch(API_URL + "get_measures_from_second", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ filename: fileSelected, second: second })
+    body: JSON.stringify({ filename: fileSelected, start_second: second })
   });
   if (!response.ok) {
     console.error("Failed to get measure:", response.statusText);
     return;
   }
   const data = await response.json();
-  return data.measure_number;
+  return data.start_measure;
 }
 
 // Helper function to handle Soundslice iframe loading and notation visibility checks
